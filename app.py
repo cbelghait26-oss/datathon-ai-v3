@@ -1,49 +1,75 @@
+import google.generativeai as genai
 import os
-from agno.db.sqlite import SqliteDb
-from pathlib import Path
-from agno.agent import Agent
-from agno.media import File
-from agno.models.google import Gemini
+from dotenv import load_dotenv
 
-db = SqliteDb(db_file="chat_history.db")
+# Load environment variables
+load_dotenv()
 
-os.environ["GOOGLE_API_KEY"] = "AIzaSyCE7Rcv1DI8kVPzs2momYdLtRv_9vO5ybU"
+# Configure Gemini
+def configure_gemini():
+    api_key = os.getenv('GEMINI_API_KEY')
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY not found in environment variables")
+    
+    genai.configure(api_key=api_key)
+    
+    # Check available models
+    available_models = []
+    for model in genai.list_models():
+        available_models.append(model.name)
+        print(f"Available: {model.name}")
+    
+    return available_models
 
+# Initialize and test the model
+def initialize_model():
+    try:
+        available_models = configure_gemini()
+        
+        # Try different model names
+        model_options = [
+            'models/gemini-1.5-pro',
+            'models/gemini-1.0-pro', 
+            'models/gemini-pro'
+        ]
+        
+        selected_model = None
+        for model_name in model_options:
+            if any(model_name in avail for avail in available_models):
+                selected_model = model_name
+                break
+        
+        if not selected_model:
+            # Use the first available model that supports generateContent
+            for model in genai.list_models():
+                if 'generateContent' in model.supported_generation_methods:
+                    selected_model = model.name
+                    break
+        
+        if not selected_model:
+            raise Exception("No suitable model found for generateContent")
+            
+        print(f"Using model: {selected_model}")
+        return genai.GenerativeModel(selected_model.replace('models/', ''))
+        
+    except Exception as e:
+        print(f"Error initializing model: {e}")
+        return None
 
-uploaded_filename = list(uploaded.keys())[0]
-pdf_path = Path(uploaded_filename)
+# Generate content function
+def generate_content(prompt):
+    try:
+        model = initialize_model()
+        if not model:
+            return "Error: Model not available"
+        
+        response = model.generate_content(prompt)
+        return response.text
+        
+    except Exception as e:
+        return f"Error generating content: {str(e)}"
 
-
-agent = Agent(
-    model=Gemini(id="gemini-2.0-flash-exp"),
-    markdown=True,
-    add_history_to_context=True, # remembers past messages
-    db=db
-)
-
-print("You can now chat with the AI. Type 'exit' to quit.")
-
-
-file_summarized = False
-
-while True:
-    user_input = input("You: ")
-
-    if user_input.lower() in ["exit", "quit"]:
-        print("Ending conversation.")
-        break
-
-    if not file_summarized:
-        # First input: summarize PDF
-        response = agent.run(
-            input="Summarize the contents of this PDF file.\n" + user_input,
-            files=[File(filepath=pdf_path)]
-        )
-        file_summarized = True
-    else:
-        # Subsequent inputs: normal chat without file
-        response = agent.run(
-            input=user_input
-        )
-
-    print("AI:", response.content)
+# Test the connection
+if __name__ == "__main__":
+    test_response = generate_content("Hello, are you working?")
+    print("Test response:", test_response)
