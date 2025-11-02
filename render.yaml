@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: datathon-ai-backend
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: GOOGLE_API_KEY
+        value: AIzaSyCE7Rcv1DI8kVPzs2momYdLtRv_9vO5ybU
