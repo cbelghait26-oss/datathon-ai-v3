@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Datathon AI - Document Analysis & Chat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0c0c0c;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .title {
+            font-size: 60px;
+            background: linear-gradient(90deg, #6c63ff, #ff6584);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        
+        .subtitle {
+            color: #b0b0b0;
+            font-size: 20px;
+            margin-bottom: 50px;
+        }
+        
+        .upload-box {
+            border: 2px dashed #6c63ff;
+            padding: 40px 30px;
+            margin: 20px auto;
+            max-width: 500px;
+            border-radius: 15px;
+            background: rgba(108, 99, 255, 0.05);
+        }
+        
+        .upload-icon {
+            font-size: 50px;
+            margin-bottom: 15px;
+        }
+        
+        .file-types {
+            color: #b0b0b0;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+        
+        button {
+            background: #6c63ff;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        
+        button:hover {
+            background: #5a52d5;
+        }
+        
+        #analyzeBtn {
+            background: linear-gradient(90deg, #6c63ff, #ff6584);
+            padding: 15px 30px;
+            font-size: 18px;
+            display: none;
+            margin-top: 20px;
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        .file-info {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            display: none;
+        }
+        
+        .file-type-badge {
+            background: #6c63ff;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        
+        .result {
+            background: rgba(255,255,255,0.1);
+            padding: 25px;
+            border-radius: 15px;
+            margin: 30px auto;
+            max-width: 700px;
+            display: none;
+            text-align: left;
+        }
+        
+        .loading {
+            display: none;
+            margin: 30px 0;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.1);
+            border-top: 4px solid #6c63ff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .summary-box {
+            background: rgba(108, 99, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #6c63ff;
+            white-space: pre-line;
+            line-height: 1.6;
+        }
+
+        /* Chat Interface Styles */
+        .chat-container {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            margin: 30px auto;
+            max-width: 700px;
+            display: none;
+            overflow: hidden;
+        }
+        
+        .chat-header {
+            background: rgba(108, 99, 255, 0.2);
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .chat-messages {
+            height: 400px;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            line-height: 1.4;
+        }
+        
+        .user-message {
+            background: #6c63ff;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .ai-message {
+            background: rgba(255,255,255,0.1);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+            white-space: pre-line;
+        }
+        
+        .chat-input-container {
+            padding: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            gap: 10px;
+        }
+        
+        #chatInput {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 25px;
+            background: rgba(255,255,255,0.05);
+            color: white;
+            font-size: 16px;
+        }
+        
+        #chatInput:focus {
+            outline: none;
+            border-color: #6c63ff;
+        }
+        
+        #sendMessage {
+            background: #6c63ff;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+        }
+        
+        #sendMessage:hover {
+            background: #5a52d5;
+        }
+        
+        .chat-placeholder {
+            text-align: center;
+            color: #b0b0b0;
+            padding: 40px;
+        }
+        
+        .suggested-questions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+            justify-content: center;
+        }
+        
+        .suggestion-chip {
+            background: rgba(108, 99, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .suggestion-chip:hover {
+            background: rgba(108, 99, 255, 0.4);
+        }
+
+        .backend-status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+        
+        .status-connected {
+            background: rgba(101, 255, 132, 0.1);
+            color: #65ff84;
+        }
+        
+        .status-disconnected {
+            background: rgba(255, 101, 132, 0.1);
+            color: #ff6584;
+        }
+
+        .url-setup {
+            background: rgba(108, 99, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px auto;
+            max-width: 500px;
+        }
+    </style>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">Datathon AI</h1>
+        <p class="subtitle">Analyze documents and chat with AI about them</p>
+        
+        <div class="url-setup" id="urlSetup">
+            <h3>🚀 Setup Required</h3>
+            <p>Before using the app, you need to deploy the backend to Render and enter the URL below.</p>
+            <div style="margin: 15px 0;">
+                <input type="text" id="backendUrlInput" placeholder="https://your-app.onrender.com" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #6c63ff; background: rgba(255,255,255,0.1); color: white;">
+                <button onclick="saveBackendUrl()" style="width: 100%; margin-top: 10px;">Save Backend URL</button>
+            </div>
+            <p style="font-size: 12px; color: #b0b0b0;">
+                Don't have a backend URL? <a href="#deploy-instructions" style="color: #6c63ff;">Click here for deployment instructions</a>
+            </p>
+        </div>
+        
+        <div class="backend-status status-disconnected" id="backendStatus" style="display: none;">
+            🔴 Backend: Not Connected
+        </div>
+        
+        <div class="upload-box" id="uploadBox" style="display: none;">
+            <div class="upload-icon">📁</div>
+            <h2>Upload Your Document</h2>
+            <p class="file-types">Supports: PDF, TXT, CSV files</p>
+            
+            <button onclick="document.getElementById('fileInput').click()">
+                Choose File
+            </button>
+            <input type="file" id="fileInput" accept=".pdf,.txt,.csv">
+            
+            <div class="file-info" id="fileInfo">
+                <p>📄 <strong>Selected:</strong> <span id="fileName">No file selected</span> <span id="fileTypeBadge" class="file-type-badge"></span></p>
+            </div>
+            
+            <button id="analyzeBtn" onclick="analyzeDocument()">
+                🤖 Analyze Document
+            </button>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p id="loadingText">🤖 Reading your document...</p>
+        </div>
+        
+        <div class="result" id="result">
+            <h2 style="text-align: center; color: #6c63ff; margin-bottom: 20px;">📊 Document Summary</h2>
+            <div class="summary-box" id="resultText"></div>
+        </div>
+        
+        <!-- Chat Interface -->
+        <div class="chat-container" id="chatContainer">
+            <div class="chat-header">
+                <h3 style="color: #6c63ff; margin: 0;">💬 Chat with AI about your document</h3>
+                <p style="color: #b0b0b0; margin: 5px 0 0 0;">Ask questions about the content</p>
+            </div>
+            
+            <div class="chat-messages" id="chatMessages">
+                <div class="chat-placeholder">
+                    <p>💡 Ask me anything about your document!</p>
+                    <div class="suggested-questions">
+                        <div class="suggestion-chip" onclick="askQuestion('What are the main points of this document?')">What are the main points?</div>
+                        <div class="suggestion-chip" onclick="askQuestion('Can you explain the key findings?')">Explain key findings</div>
+                        <div class="suggestion-chip" onclick="askQuestion('What are the most important sections?')">Important sections</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-input-container">
+                <input type="text" id="chatInput" placeholder="Ask a question about the document..." onkeypress="handleChatKeypress(event)">
+                <button id="sendMessage" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+
+        <!-- Deployment Instructions -->
+        <div id="deploy-instructions" style="text-align: left; margin-top: 50px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 10px;">
+            <h3>📋 How to Deploy Backend to Render</h3>
+            <ol>
+                <li>Go to <a href="https://render.com" target="_blank" style="color: #6c63ff;">render.com</a> and sign up</li>
+                <li>Click "New +" and select "Web Service"</li>
+                <li>Connect your GitHub repository</li>
+                <li>Select your <code>datathon-ai-render</code> repository</li>
+                <li>Use these settings:
+                    <ul>
+                        <li><strong>Name:</strong> datathon-ai-backend</li>
+                        <li><strong>Environment:</strong> Python</li>
+                        <li><strong>Region:</strong> Choose closest to you</li>
+                        <li><strong>Branch:</strong> main</li>
+                        <li><strong>Root Directory:</strong> (leave empty)</li>
+                        <li><strong>Build Command:</strong> <code>pip install -r requirements.txt</code></li>
+                        <li><strong>Start Command:</strong> <code>gunicorn app:app</code></li>
+                    </ul>
+                </li>
+                <li>Click "Create Web Service"</li>
+                <li>Wait for deployment (5-10 minutes)</li>
+                <li>Copy your Render URL (looks like <code>https://your-app.onrender.com</code>)</li>
+                <li>Paste the URL in the setup box above</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        let currentSessionId = null;
+        let backendConnected = false;
+        let BACKEND_URL = '';
+        
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+        // Check for saved backend URL when page loads
+        window.addEventListener('load', function() {
+            const savedUrl = localStorage.getItem('backend_url');
+            if (savedUrl) {
+                BACKEND_URL = savedUrl;
+                document.getElementById('backendUrlInput').value = savedUrl;
+                checkBackendConnection();
+            }
+        });
+
+        function saveBackendUrl() {
+            const urlInput = document.getElementById('backendUrlInput');
+            const url = urlInput.value.trim();
+            
+            if (!url) {
+                alert('Please enter a valid Render URL');
+                return;
+            }
+            
+            if (!url.startsWith('https://')) {
+                alert('URL must start with https://');
+                return;
+            }
+            
+            BACKEND_URL = url;
+            localStorage.setItem('backend_url', url);
+            checkBackendConnection();
+        }
+
+        async function checkBackendConnection() {
+            if (!BACKEND_URL) return;
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/`, { 
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    backendConnected = true;
+                    
+                    // Hide setup, show app
+                    document.getElementById('urlSetup').style.display = 'none';
+                    document.getElementById('backendStatus').style.display = 'block';
+                    document.getElementById('uploadBox').style.display = 'block';
+                    
+                    document.getElementById('backendStatus').className = 'backend-status status-connected';
+                    document.getElementById('backendStatus').innerHTML = `🟢 Backend: Connected - ${data.message}`;
+                } else {
+                    throw new Error('Backend not responding properly');
+                }
+            } catch (error) {
+                backendConnected = false;
+                document.getElementById('backendStatus').style.display = 'block';
+                document.getElementById('backendStatus').className = 'backend-status status-disconnected';
+                document.getElementById('backendStatus').innerHTML = 
+                    `🔴 Backend: Not Connected - ${error.message}`;
+            }
+        }
+
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const fileInfo = document.getElementById('fileInfo');
+            const fileName = document.getElementById('fileName');
+            const fileTypeBadge = document.getElementById('fileTypeBadge');
+            
+            fileName.textContent = file.name;
+            
+            const fileExtension = getFileExtension(file.name);
+            fileTypeBadge.textContent = fileExtension.toUpperCase();
+            
+            fileInfo.style.display = 'block';
+            document.getElementById('analyzeBtn').style.display = 'block';
+            
+            // Hide previous results and chat
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('chatContainer').style.display = 'none';
+        });
+        
+        async function analyzeDocument() {
+            if (!backendConnected) {
+                alert('Backend not connected! Please check your Render URL.');
+                return;
+            }
+
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a file first!');
+                return;
+            }
+            
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('analyzeBtn').style.display = 'none';
+            document.getElementById('loadingText').textContent = `🤖 Analyzing ${getFileExtension(file.name).toUpperCase()} file...`;
+            
+            try {
+                const fileContent = await readFileContent(file);
+                
+                // Send to backend for analysis
+                const response = await fetch(`${BACKEND_URL}/analyze`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: fileContent,
+                        filename: file.name
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Backend error: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Display the AI summary
+                    document.getElementById('resultText').textContent = result.analysis;
+                    document.getElementById('result').style.display = 'block';
+                    
+                    // Store session ID for chat
+                    currentSessionId = result.session_id;
+                    
+                    // SHOW CHAT INTERFACE
+                    document.getElementById('chatContainer').style.display = 'block';
+                    
+                    // Clear any previous chat messages
+                    const chatMessages = document.getElementById('chatMessages');
+                    chatMessages.innerHTML = `
+                        <div class="chat-placeholder">
+                            <p>💡 Ask me anything about your document!</p>
+                            <div class="suggested-questions">
+                                <div class="suggestion-chip" onclick="askQuestion('What are the main points of this document?')">What are the main points?</div>
+                                <div class="suggestion-chip" onclick="askQuestion('Can you explain the key findings?')">Explain key findings</div>
+                                <div class="suggestion-chip" onclick="askQuestion('What are the most important sections?')">Important sections</div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Scroll to results
+                    setTimeout(() => {
+                        document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                    
+                } else {
+                    throw new Error(result.error);
+                }
+                
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('analyzeBtn').style.display = 'block';
+                alert('Error analyzing document: ' + error.message);
+            }
+            
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        async function sendMessage() {
+            if (!backendConnected || !currentSessionId) {
+                alert('Please analyze a document first to start chatting with AI');
+                return;
+            }
+
+            const chatInput = document.getElementById('chatInput');
+            const message = chatInput.value.trim();
+            
+            if (!message) {
+                alert('Please enter a message');
+                return;
+            }
+            
+            // Add user message to chat
+            addMessageToChat('user', message);
+            chatInput.value = '';
+            
+            // Show loading in chat
+            const loadingMessage = addMessageToChat('assistant', 'Thinking...');
+            
+            try {
+                const response = await fetch(`${BACKEND_URL}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        session_id: currentSessionId,
+                        message: message
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Backend error: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                // Remove loading message
+                loadingMessage.remove();
+                
+                if (result.success) {
+                    addMessageToChat('assistant', result.response);
+                } else {
+                    addMessageToChat('assistant', `Error: ${result.error}`);
+                }
+                
+            } catch (error) {
+                loadingMessage.remove();
+                addMessageToChat('assistant', `Sorry, I'm having trouble connecting to the AI. Please try again.`);
+            }
+            
+            // Scroll to bottom of chat
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        function addMessageToChat(role, content) {
+            const chatMessages = document.getElementById('chatMessages');
+            
+            // Remove placeholder if it exists
+            const placeholder = chatMessages.querySelector('.chat-placeholder');
+            if (placeholder) {
+                placeholder.remove();
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}-message`;
+            messageDiv.textContent = content;
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            return messageDiv;
+        }
+        
+        function askQuestion(question) {
+            document.getElementById('chatInput').value = question;
+            sendMessage();
+        }
+        
+        function handleChatKeypress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        // File reading functions
+        async function readFileContent(file) {
+            const fileExtension = getFileExtension(file.name);
+            
+            switch (fileExtension) {
+                case 'txt':
+                    return await readTextFile(file);
+                case 'pdf':
+                    return await readPDFFile(file);
+                case 'csv':
+                    return await readCSVFile(file);
+                default:
+                    return await readTextFile(file);
+            }
+        }
+        
+        function readTextFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = event => resolve(event.target.result);
+                reader.onerror = error => reject(error);
+                reader.readAsText(file);
+            });
+        }
+        
+        async function readPDFFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = async event => {
+                    try {
+                        const typedArray = new Uint8Array(event.target.result);
+                        const pdf = await pdfjsLib.getDocument(typedArray).promise;
+                        let fullText = '';
+                        
+                        // Only read first 10 pages to avoid timeout
+                        const maxPages = Math.min(pdf.numPages, 10);
+                        
+                        for (let i = 1; i <= maxPages; i++) {
+                            const page = await pdf.getPage(i);
+                            const textContent = await page.getTextContent();
+                            const pageText = textContent.items.map(item => item.str).join(' ');
+                            fullText += pageText + '\n';
+                        }
+                        
+                        if (pdf.numPages > 10) {
+                            fullText += `\n[Document truncated - showing first 10 of ${pdf.numPages} pages]`;
+                        }
+                        
+                        resolve(fullText);
+                    } catch (error) {
+                        reject(new Error('Failed to read PDF: ' + error.message));
+                    }
+                };
+                reader.onerror = error => reject(error);
+                reader.readAsArrayBuffer(file);
+            });
+        }
+        
+        async function readCSVFile(file) {
+            const text = await readTextFile(file);
+            return `CSV File Content:\n${text}`;
+        }
+        
+        function getFileExtension(filename) {
+            return filename.split('.').pop().toLowerCase();
+        }
+    </script>
+</body>
+</html>
